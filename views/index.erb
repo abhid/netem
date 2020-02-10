@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>netem &middot; Network Emulation Console</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha256-L/W5Wfqfa0sdBNIKN9cG6QA5F2qx4qICmU2VgLruv9Y=" crossorigin="anonymous" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha256-WqU1JavFxSAMcLP2WIOI+GB2zWmShMI82mTpLDcqFUg=" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-9">
+          <h4 class="display-4">netem &middot; <span class="text-muted">Network Emulation Console</span></h4>
+        </div>
+        <div class="col-9">
+          <p class="lead">
+            netem uses the iproute2 library and the linux tc command to set traffic queueing settings via a GUI.
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-12">
+          <h4>Interface Overview</h4>
+        </div>
+        <div class="col-3">
+          <table class="table table-sm table-bordered table-hover">
+            <thead class="thead-light">
+              <tr>
+                <th>Interface</th>
+                <th>State</th>
+                <th>Type</th>
+                <th>MAC</th>
+                <th>IP Address</th>
+              </tr>
+            </thead>
+            <tbody>
+            <% @interfaces.each do |intf| %>
+              <tr class="intf-<%= intf["ifindex"] %>">
+                <td><a href="#intf_settings_header_<%= intf["ifindex"] %>" data-toggle="collapse" data-target="#intf_settings_<%= intf["ifindex"] %>" aria-expanded="true" aria-controls="intf_settings_<%= intf["ifindex"] %>"><%= intf["ifname"] %></a></td>
+                <td><%= intf["operstate"] %></td>
+                <td><%= intf["link_type"] %></td>
+                <td><pre><%= intf["address"] %></pre></td>
+                <% ips = intf["addr_info"].collect { |x| (x["local"] || "0.0.0.0") + "/" + (x["prefixlen"].to_s || "0") } %>
+                <td>
+                  <pre><%= ips.join("<br/>") %></pre>
+                </td>
+              </tr>
+            <% end %>
+          </table>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-12">
+          <h4>Interface Settings</h4>
+        </div>
+        <div class="col-4">
+          <div class="accordion" id="interface_selector">
+            <% @interfaces.each do |intf| %>
+              <% tc_opt = @qdisc.filter { |x| x if x["dev"] == intf["ifname"]}[0] %>
+              <% queue_opt = {} %>
+              <% queue_opt = tc_opt["options"].class == String ? tc_opt["options"].sub(/^{/, "").sub(/}$/, "") : tc_opt["options"] %>
+              <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center" id="intf_settings_header_<%= intf["ifindex"] %>">
+                  <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#intf_settings_<%= intf["ifindex"] %>" aria-expanded="true" aria-controls="intf_settings_<%= intf["ifindex"] %>">
+                    <%= intf["ifname"] %>
+                  </button>
+                  <span>
+                    <span class="badge badge-primary"><%= tc_opt["kind"] %></span>
+                    <span class="badge badge-info"><%= intf["link_type"] %></span>
+                    <span class="badge badge-secondary"><%= intf["operstate"] %></span>
+                  </span>
+                </div>
+                <div id="intf_settings_<%= intf["ifindex"] %>" class="collapse card-body" aria-labelledby="intf_settings_header_<%= intf["ifindex"] %>" data-parent="#interface_selector">
+                  <form class="form">
+                    <table class="table table-bordered table-sm">
+                      <thead class="thead-light">
+                        <tr>
+                          <th>Metric</th>
+                          <th>Current</th>
+                          <th>New Value</th>
+                        </tr>
+                      </thead>
+                      <tr>
+                        <td>Rate</td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td>Delay (ms)</td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td>Loss (%)</td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td>Duplicate</td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td>Reorder</td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td>Corrupt</td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td>queue options</td>
+                        <td colspan="2">
+                          <samp><%= queue_opt %></samp>
+                        </td>
+                      </tr>
+                    </table>
+                    <button type="button" name="submit_interface_<%= intf["ifindex"] %>" class="btn btn-sm btn-primary">Apply to interface</button>
+                  </form>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+    <samp><%= @qdisc %></samp>
+  </body>
+</html>
