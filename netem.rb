@@ -1,6 +1,7 @@
 require 'sinatra'
 require "sinatra/reloader" if development?
 require 'json'
+require 'awesome_print'
 
 get '/' do
   @interfaces = JSON.parse %x(ip -j address)

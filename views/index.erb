@@ -23,7 +23,7 @@
         <div class="col-12">
           <h4>Interface Overview</h4>
         </div>
-        <div class="col-3">
+        <div class="col-6">
           <table class="table table-sm table-bordered table-hover">
             <thead class="thead-light">
               <tr>
@@ -54,62 +54,90 @@
         <div class="col-12">
           <h4>Interface Settings</h4>
         </div>
-        <div class="col-4">
+        <div class="col-6">
           <div class="accordion" id="interface_selector">
             <% @interfaces.each do |intf| %>
               <% tc_opt = @qdisc.filter { |x| x if x["dev"] == intf["ifname"]}[0] %>
               <% queue_opt = {} %>
               <% queue_opt = tc_opt["options"].class == String ? tc_opt["options"].sub(/^{/, "").sub(/}$/, "") : tc_opt["options"] %>
               <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center" id="intf_settings_header_<%= intf["ifindex"] %>">
-                  <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#intf_settings_<%= intf["ifindex"] %>" aria-expanded="true" aria-controls="intf_settings_<%= intf["ifindex"] %>">
-                    <%= intf["ifname"] %>
-                  </button>
+                <a href="#" id="intf_settings_header_<%= intf["ifindex"] %>" class="card-header d-flex justify-content-between align-items-center text-decoration-none" data-toggle="collapse" data-target="#intf_settings_<%= intf["ifindex"] %>" aria-expanded="true" aria-controls="intf_settings_<%= intf["ifindex"] %>">
+                  <%= intf["ifname"] %>
                   <span>
                     <span class="badge badge-primary"><%= tc_opt["kind"] %></span>
                     <span class="badge badge-info"><%= intf["link_type"] %></span>
                     <span class="badge badge-secondary"><%= intf["operstate"] %></span>
                   </span>
-                </div>
+                </a>
                 <div id="intf_settings_<%= intf["ifindex"] %>" class="collapse card-body" aria-labelledby="intf_settings_header_<%= intf["ifindex"] %>" data-parent="#interface_selector">
                   <form class="form">
-                    <table class="table table-bordered table-sm">
+                    <table class="table table-bordered table-sm table-fluid">
                       <thead class="thead-light">
                         <tr>
-                          <th>Metric</th>
+                          <th style="width:150px;">Metric</th>
                           <th>Current</th>
-                          <th>New Value</th>
+                          <th style="width:400px;">New Value</th>
                         </tr>
                       </thead>
                       <tr>
                         <td>Rate</td>
                         <td></td>
-                        <td></td>
+                        <td>
+                          <div class="form-row">
+                            <div class="col">
+                              <input class="form-control form-control-sm" type="text" name="rate" placeholder="Rate (mbps)">
+                            </div>
+                            <div class="col">
+                              <input class="form-control form-control-sm" type="text" name="rate_burst" placeholder="Burst (mbps)">
+                            </div>
+                            <div class="col">
+                              <input class="form-control form-control-sm" type="text" name="rate_latency" placeholder="Latency (ms)">
+                            </div>
+                          </div>
+                        </td>
                       </tr>
                       <tr>
                         <td>Delay (ms)</td>
                         <td></td>
-                        <td></td>
+                        <td>
+                          <div class="form-row">
+                            <div class="col">
+                              <input class="form-control form-control-sm" type="text" name="delay" placeholder="Delay (ms)">
+                            </div>
+                            <div class="col">
+                              <select name="delay_dist" class="form-control form-control-sm">
+                                <option selected>Distribution</option>
+                                <option>Uniform</option>
+                                <option>Normal</option>
+                                <option>Pareto</option>
+                                <option>Pareto Normal</option>
+                              </select>
+                            </div>
+                            <div class="col">
+                              <input class="form-control form-control-sm" type="text" name="delay_var" placeholder="Variation (ms)">
+                            </div>
+                          </div>
+                        </td>
                       </tr>
                       <tr>
                         <td>Loss (%)</td>
                         <td></td>
-                        <td></td>
+                        <td><input class="form-control form-control-sm" type="text" name="loss" placeholder="Loss (%)"></td>
                       </tr>
                       <tr>
                         <td>Duplicate</td>
                         <td></td>
-                        <td></td>
+                        <td><input class="form-control form-control-sm" type="text" name="duplicate" placeholder="Duplicate (%)"></td>
                       </tr>
                       <tr>
                         <td>Reorder</td>
                         <td></td>
-                        <td></td>
+                        <td><input class="form-control form-control-sm" type="text" name="reorder" placeholder="Reorder (%)"></td>
                       </tr>
                       <tr>
                         <td>Corrupt</td>
                         <td></td>
-                        <td></td>
+                        <td><input class="form-control form-control-sm" type="text" name="corrupt" placeholder="Corrupt (%)"></td>
                       </tr>
                       <tr>
                         <td>queue options</td>
@@ -118,7 +146,15 @@
                         </td>
                       </tr>
                     </table>
+                    <select name="interface_preset" class="form-control form-control-sm mr-2" style="width:200px;display:inline;">
+                      <option selected>Network Profile...</option>
+                      <option>3G/LTE</option>
+                      <option>Satellite</option>
+                      <option>T1 DSL</option>
+                      <option>Bad WiFi</option>
+                    </select>
                     <button type="button" name="submit_interface_<%= intf["ifindex"] %>" class="btn btn-sm btn-primary">Apply to interface</button>
+                    <button type="button" name="reset_interface_<%= intf["ifindex"] %>" class="btn btn-sm btn-danger">Reset interface</button>
                   </form>
                 </div>
               </div>
@@ -126,7 +162,27 @@
           </div>
         </div>
       </div>
+      <div class="row mt-4">
+        <div class="col-3">
+          <div class="card">
+            <a class="card-header text-reset" data-toggle="collapse" href="#debug_info" role="button" aria-expanded="false" aria-controls="debug_info">Show Debug Info</a>
+            <div id="debug_info" class="collapse card-body">
+              <pre><%= JSON.pretty_generate @qdisc %></pre>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <samp><%= @qdisc %></samp>
+    <div class="footer" style="position: fixed; display: block; width: 100%; line-height: 25px; bottom: 0px; background: #354370; color: #ffffff; text-align: right; padding: 5px 20px; font-weight: 700;">
+      netem v0.0.1a
+      &nbsp;&nbsp;&middot;&nbsp;&nbsp;
+      &copy; 2020
+      &nbsp;&nbsp;&middot;&nbsp;&nbsp;
+      <i class="fab fa-github"></i> <a href="https://github.com/abhid/netem" target="_blank" style="color: inherit;">abhid/netem</a>
+      &nbsp;&nbsp;&middot;&nbsp;&nbsp;
+      <i class="fas fa-code"></i> <a href="https://github.com/abhid/netem/graphs/contributors" target="_blank" style="color: inherit;">Contributors</a>
+      &nbsp;&nbsp;&middot;&nbsp;&nbsp;
+      <i class="fas fa-heart"></i> <a href="https://github.com/abhid/netem/issues/new" target="_blank" style="color: inherit;">Report a bug</a>
+    </div>
   </body>
 </html>
